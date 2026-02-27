@@ -1,0 +1,74 @@
+'use client';
+
+import { useMemo } from 'react';
+import RankBadge from './RankBadge';
+import { getLocalProgress } from '../lib/localProgress';
+
+type Row = {
+  position: number;
+  username: string;
+  rank: 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS';
+  title: string;
+  xp: number;
+  streak: number;
+};
+
+export default function LeaderboardLocalView() {
+  const rows = useMemo(() => {
+    const progress = getLocalProgress();
+    const seed: Omit<Row, 'position'>[] = [
+      { username: 'shadowfox', rank: 'A', title: 'Pipe Dream', xp: 8200, streak: 14 },
+      { username: 'kernelkid', rank: 'B', title: 'The Awakened One', xp: 7600, streak: 9 },
+      { username: 'grepqueen', rank: 'C', title: 'Grep God', xp: 6400, streak: 22 }
+    ];
+
+    seed.push({
+      username: 'you',
+      rank: progress.rank,
+      title: progress.completedChallenges.length ? 'The Awakened One' : 'Rising Hunter',
+      xp: progress.totalXp,
+      streak: progress.streak
+    });
+
+    return seed
+      .sort((a, b) => b.xp - a.xp)
+      .map((row, index) => ({ ...row, position: index + 1 }));
+  }, []);
+
+  return (
+    <main className="min-h-screen bg-gray-950">
+      <div className="mx-auto max-w-5xl px-6 py-10 space-y-8">
+        <div>
+          <h1 className="font-display text-4xl">Leaderboard</h1>
+          <p className="text-gray-400">Top hunters ranked by total XP (local mode).</p>
+        </div>
+        <div className="glow-panel rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-900 text-gray-400">
+              <tr>
+                <th className="px-4 py-3 text-left">#</th>
+                <th className="px-4 py-3 text-left">Hunter</th>
+                <th className="px-4 py-3 text-left">Rank</th>
+                <th className="px-4 py-3 text-left">Top Title</th>
+                <th className="px-4 py-3 text-left">XP</th>
+                <th className="px-4 py-3 text-left">Streak</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.username} className="border-t border-gray-800">
+                  <td className="px-4 py-3">{row.position}</td>
+                  <td className="px-4 py-3">{row.username}</td>
+                  <td className="px-4 py-3"><RankBadge rank={row.rank} /></td>
+                  <td className="px-4 py-3 text-gray-300">{row.title}</td>
+                  <td className="px-4 py-3 text-gray-300">{row.xp}</td>
+                  <td className="px-4 py-3 text-amber-300">🔥 {row.streak}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  );
+}
