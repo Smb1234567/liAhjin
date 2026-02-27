@@ -1,27 +1,11 @@
-import XPBar from '../../components/XPBar';
-import RankBadge from '../../components/RankBadge';
 import QuestPanel from '../../components/QuestPanel';
 import Link from 'next/link';
 import AuthPanel from '../../components/AuthPanel';
-import { supabaseServer } from '../../lib/supabaseServer';
 import RankExamPanel from '../../components/RankExamPanel';
 import { examCooldownRemaining, isRankExamUnlocked } from '../../lib/rankExams';
+import DashboardProgressCard from '../../components/DashboardProgressCard';
 
-export default async function DashboardPage() {
-  const supabase = supabaseServer();
-  const { data: featuredChallenge } = await supabase
-    .from('challenges')
-    .select('slug,title')
-    .order('id', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  const { data: chapter } = await supabase
-    .from('chapters')
-    .select('title')
-    .order('order_index', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
+export default function DashboardPage() {
   const completedChapterIds = [1, 2];
   const currentRank = 'D' as const;
   const examUnlocked = isRankExamUnlocked(currentRank, completedChapterIds);
@@ -35,20 +19,8 @@ export default async function DashboardPage() {
             <h1 className="font-display text-4xl">Hunter Dashboard</h1>
             <p className="text-gray-400">Welcome back, your next dungeon awaits.</p>
           </div>
-          <RankBadge rank="C" />
         </div>
-
-        <div className="glow-panel rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-2xl">Level 12</h2>
-            <span className="text-sm text-gray-400">XP 420 / 680</span>
-          </div>
-          <XPBar current={420} next={680} />
-          <div className="flex items-center gap-4 text-sm text-gray-300">
-            <span className="streak-flame">🔥 6 day streak</span>
-            <span className="text-amber-300">System message: Keep your momentum.</span>
-          </div>
-        </div>
+        <DashboardProgressCard />
 
         <div className="grid gap-6 md:grid-cols-2">
           <AuthPanel />
@@ -72,16 +44,16 @@ export default async function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-2">
           <div className="glow-panel rounded-xl p-6">
             <h3 className="font-display text-2xl">Continue Learning</h3>
-            <p className="text-sm text-gray-400">{chapter?.title ?? 'Chapter 1 — Awakening'}</p>
+            <p className="text-sm text-gray-400">Chapter 1 — Awakening</p>
             <Link href="/learn" className="mt-4 inline-block rounded-full bg-amber-400 px-5 py-2 text-gray-950">
               Resume Chapter
             </Link>
           </div>
           <div className="glow-panel rounded-xl p-6">
             <h3 className="font-display text-2xl">Today's Featured Challenge</h3>
-            <p className="text-sm text-gray-400">{featuredChallenge?.title ?? 'Lock it down'}</p>
+            <p className="text-sm text-gray-400">Hello Terminal</p>
             <Link
-              href={`/challenges/${featuredChallenge?.slug ?? 'chmod-01'}`}
+              href="/challenges/echo-hello"
               className="mt-4 inline-block rounded-full border border-gray-700 px-5 py-2 text-gray-200"
             >
               Start Challenge

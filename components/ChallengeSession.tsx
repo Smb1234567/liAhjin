@@ -1,20 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Terminal from './Terminal';
+import { recordChallengeResult } from '../lib/localProgress';
 
 export type ChallengeSessionProps = {
   challengeId: number;
+  slug: string;
   setupScript: string | null;
   validatorScript: string | null;
+  xpReward: number;
+  timeLimitSeconds: number;
+  hintsUsed: number;
 };
 
-export default function ChallengeSession({ challengeId, setupScript, validatorScript }: ChallengeSessionProps) {
+function formatSeconds(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+export default function ChallengeSession({
+  challengeId,
+  slug,
+  setupScript,
+  validatorScript,
+  xpReward,
+  timeLimitSeconds,
+  hintsUsed
+}: ChallengeSessionProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [websocketUrl, setWebsocketUrl] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'running' | 'pass' | 'fail'>('idle');
+  const [status, setStatus] = useState<'idle' | 'running' | 'pass' | 'fail' | 'error'>('idle');
   const [output, setOutput] = useState<string>('');
   const [attempts, setAttempts] = useState<number>(0);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(timeLimitSeconds);
+  const [xpAwarded, setXpAwarded] = useState<number>(0);
+  const [levelUps, setLevelUps] = useState<number>(0);
+
+  useEffect(() => {
+    if (!startedAt || !sessionId) return;
+    const interval = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const remaining = Math.max(0, timeLimitSeconds - elapsed);
+      setRemainingSeconds(remaining);
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [sessionId, startedAt, timeLimitSeconds]);
 
   const createSession = async () => {
     setStatus('running');
@@ -24,16 +57,20 @@ export default function ChallengeSession({ challengeId, setupScript, validatorSc
       body: JSON.stringify({ setup_script: setupScript })
     });
     if (!res.ok) {
-      setStatus('idle');
+      setStatus('error');
+      setOutput('Failed to start sandbox session.');
       return;
     }
     const data = await res.json();
     setSessionId(data.session_id);
     setWebsocketUrl(data.websocket_url);
+    setStartedAt(Date.now());
+    setRemainingSeconds(timeLimitSeconds);
+    setOutput('');
   };
 
   const submit = async () => {
-    if (!sessionId || !validatorScript) return;
+    if (!sessionId || !validatorScript || remainingSeconds <= 0) return;
     const res = await fetch('/api/sandbox/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -43,6 +80,17 @@ export default function ChallengeSession({ challengeId, setupScript, validatorSc
     setAttempts((prev) => prev + 1);
     if (data.result === 'PASS') {
       setStatus('pass');
+      const timeTakenSeconds = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
+      const result = recordChallengeResult({
+        slug,
+        baseXp: xpReward,
+        hintsUsed,
+        timeTakenSeconds,
+        parTimeSeconds: timeLimitSeconds,
+        attempts: 1
+      });
+      setXpAwarded(result.xpAwarded);
+      setLevelUps(result.levelUps);
     } else {
       setStatus('fail');
     }
@@ -53,7 +101,10 @@ export default function ChallengeSession({ challengeId, setupScript, validatorSc
     <div className="glow-panel rounded-xl p-6 h-[520px] flex flex-col">
       <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
         <span>Live Terminal</span>
-        <span className="text-amber-300">Attempts: {attempts}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-amber-300">{formatSeconds(remainingSeconds)}</span>
+          <span className="text-amber-300">Attempts: {attempts}</span>
+        </div>
       </div>
       <div className="flex-1 overflow-hidden rounded-lg border border-gray-800">
         <Terminal websocketUrl={websocketUrl ?? undefined} />
@@ -69,12 +120,14 @@ export default function ChallengeSession({ challengeId, setupScript, validatorSc
         <button
           onClick={submit}
           className="rounded-full bg-amber-400 px-4 py-2 text-sm text-gray-950"
-          disabled={!sessionId}
+          disabled={!sessionId || remainingSeconds <= 0}
         >
           Submit for Validation
         </button>
-        {status === 'pass' && <span className="text-green-400 text-sm">PASS — XP awarded.</span>}
+        {status === 'pass' && <span className="text-green-400 text-sm">PASS — +{xpAwarded} XP.</span>}
         {status === 'fail' && <span className="text-red-400 text-sm">FAIL — try again.</span>}
+        {status === 'error' && <span className="text-red-400 text-sm">Session error.</span>}
+        {levelUps > 0 && <span className="text-amber-300 text-sm">LEVEL UP x{levelUps}</span>}
       </div>
       {output && (
         <pre className="mt-3 max-h-24 overflow-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-300">{output}</pre>
