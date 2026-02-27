@@ -1,0 +1,531 @@
+-- LinuxHunter Supabase SQL (schema + policies + seed)
+-- Safe to run even if you already ran the uuid-ossp extension line.
+
+create extension if not exists "uuid-ossp";
+
+create table if not exists users (
+  id uuid primary key,
+  email text,
+  username text unique,
+  rank text default 'E',
+  xp int default 0,
+  level int default 1,
+  streak int default 0,
+  last_active timestamptz,
+  stats jsonb default '{"STR":0,"INT":0,"AGI":0,"END":0}',
+  titles text[] default '{}',
+  unlocked_chapter_ids int[] default '{1}'
+);
+
+create table if not exists chapters (
+  id serial primary key,
+  order_index int unique,
+  title text,
+  description text,
+  rank_required text,
+  icon text
+);
+
+create table if not exists challenges (
+  id serial primary key,
+  chapter_id int references chapters(id),
+  order_index int,
+  slug text unique,
+  title text,
+  description text,
+  difficulty text,
+  rank_required text,
+  xp_reward int,
+  time_limit_seconds int,
+  tags text[],
+  setup_script text,
+  validator_script text,
+  hints text[],
+  prerequisite_challenge_ids int[]
+);
+
+create table if not exists user_challenge_attempts (
+  id serial primary key,
+  user_id uuid references users(id),
+  challenge_id int references challenges(id),
+  status text,
+  time_taken int,
+  xp_earned int,
+  attempts int default 0,
+  completed_at timestamptz
+);
+
+create table if not exists quests (
+  id serial primary key,
+  type text,
+  title text,
+  description text,
+  xp_reward int,
+  condition jsonb,
+  expires_at timestamptz
+);
+
+create table if not exists user_quests (
+  id serial primary key,
+  user_id uuid references users(id),
+  quest_id int references quests(id),
+  progress int default 0,
+  completed boolean default false
+);
+
+alter table users enable row level security;
+alter table chapters enable row level security;
+alter table challenges enable row level security;
+alter table user_challenge_attempts enable row level security;
+alter table quests enable row level security;
+alter table user_quests enable row level security;
+
+create policy "Users can read own profile" on users
+  for select using (auth.uid() = id);
+
+create policy "Users can update own profile" on users
+  for update using (auth.uid() = id);
+
+create policy "Users can insert own profile" on users
+  for insert with check (auth.uid() = id);
+
+create policy "Chapters are readable" on chapters
+  for select using (true);
+
+create policy "Challenges are readable" on challenges
+  for select using (true);
+
+create policy "Quests are readable" on quests
+  for select using (true);
+
+create policy "User attempts are readable" on user_challenge_attempts
+  for select using (auth.uid() = user_id);
+
+create policy "User attempts insert" on user_challenge_attempts
+  for insert with check (auth.uid() = user_id);
+
+create policy "User attempts update" on user_challenge_attempts
+  for update using (auth.uid() = user_id);
+
+create policy "User quests are readable" on user_quests
+  for select using (auth.uid() = user_id);
+
+create policy "User quests insert" on user_quests
+  for insert with check (auth.uid() = user_id);
+
+create policy "User quests update" on user_quests
+  for update using (auth.uid() = user_id);
+
+-- Seed data (14 chapters, 4 challenges each)
+insert into chapters (id, order_index, title, description, rank_required, icon) values
+  (1, 1, 'Awakening', 'Terminal basics and your first command.', 'E', 'spark'),
+  (2, 2, 'First Steps', 'File and directory management.', 'E', 'folder'),
+  (3, 3, 'Reading the World', 'Text processing basics.', 'D', 'book'),
+  (4, 4, 'Power of Pipes', 'Pipes and redirection mastery.', 'D', 'pipe'),
+  (5, 5, 'Hidden Knowledge', 'Permissions and ownership.', 'D', 'lock'),
+  (6, 6, 'Finding the Path', 'Search and find.', 'C', 'map'),
+  (7, 7, 'The Architect', 'Advanced text processing.', 'C', 'blueprint'),
+  (8, 8, 'Process Hunter', 'Process management.', 'C', 'pulse'),
+  (9, 9, 'Network Scout', 'Networking basics.', 'B', 'network'),
+  (10, 10, 'System Whisperer', 'System info and monitoring.', 'B', 'server'),
+  (11, 11, 'Shell Scribe', 'Shell scripting fundamentals.', 'B', 'scroll'),
+  (12, 12, 'The Dungeon Master', 'Advanced scripting and automation.', 'A', 'skull'),
+  (13, 13, 'Shadow Admin', 'Users, groups, security.', 'A', 'shield'),
+  (14, 14, 'S-Rank Trial', 'Real world scenarios.', 'S', 'crown');
+
+insert into challenges (
+  chapter_id, order_index, slug, title, description, difficulty, rank_required,
+  xp_reward, time_limit_seconds, tags, setup_script, validator_script, hints, prerequisite_challenge_ids
+) values
+  (1, 1, 'echo-hello', 'Hello Terminal', 'Run echo to print hello world.', 'E', 'E', 30, 60,
+    ARRAY['terminal','concept'],
+    $$true$$,
+    $$test -f /tmp/hello.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use echo to print text.', 'Redirect output into a file.', 'echo "hello world" > /tmp/hello.txt'],
+    ARRAY[]::int[]
+  ),
+  (1, 2, 'pwd-ls-cd', 'Know Your Place', 'Use pwd, ls, cd to move around.', 'E', 'E', 35, 90,
+    ARRAY['navigation'],
+    $$mkdir -p /tmp/room && touch /tmp/room/key.txt$$,
+    $$test -f /tmp/room/key.txt && echo PASS || echo FAIL$$,
+    ARRAY['Try cd /tmp/room', 'List files with ls', 'pwd to confirm location'],
+    ARRAY[1]
+  ),
+  (1, 3, 'paths-01', 'Paths and Portals', 'Use an absolute path to read a file.', 'E', 'E', 40, 90,
+    ARRAY['navigation'],
+    $$mkdir -p /tmp/cave && echo rune > /tmp/cave/rune.txt$$,
+    $$test -f /tmp/cave/rune.txt && echo PASS || echo FAIL$$,
+    ARRAY['Absolute paths start with /', 'Try cat /tmp/cave/rune.txt', 'Make sure the file exists'],
+    ARRAY[1,2]
+  ),
+  (1, 4, 'help-01', 'Call for Help', 'Use man or --help to view docs.', 'E', 'E', 45, 120,
+    ARRAY['manpage','concept'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Try man ls', 'Or use ls --help', 'Use q to quit man'],
+    ARRAY[1,2,3]
+  ),
+  (2, 1, 'touch-01', 'Create a File', 'Create a file named note.txt.', 'E', 'E', 35, 90,
+    ARRAY['files'],
+    $$rm -f /tmp/note.txt$$,
+    $$test -f /tmp/note.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use touch note.txt', 'Check with ls', 'File should be in /tmp'],
+    ARRAY[]::int[]
+  ),
+  (2, 2, 'mkdir-01', 'Build a Nest', 'Create a directory tree /tmp/base/alpha.', 'E', 'E', 40, 100,
+    ARRAY['files'],
+    $$rm -rf /tmp/base$$,
+    $$test -d /tmp/base/alpha && echo PASS || echo FAIL$$,
+    ARRAY['Use mkdir -p', 'mkdir -p /tmp/base/alpha', 'Check with ls -la /tmp/base'],
+    ARRAY[5]
+  ),
+  (2, 3, 'cp-01', 'Clone the Artifact', 'Copy note.txt to note-copy.txt.', 'E', 'E', 45, 110,
+    ARRAY['files'],
+    $$echo scroll > /tmp/note.txt && rm -f /tmp/note-copy.txt$$,
+    $$test -f /tmp/note-copy.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use cp source dest', 'cp /tmp/note.txt /tmp/note-copy.txt', 'Verify with ls'],
+    ARRAY[5]
+  ),
+  (2, 4, 'mv-01', 'Rename the Relic', 'Rename note-copy.txt to relic.txt.', 'E', 'E', 45, 110,
+    ARRAY['files'],
+    $$echo scroll > /tmp/note-copy.txt && rm -f /tmp/relic.txt$$,
+    $$test -f /tmp/relic.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use mv old new', 'mv /tmp/note-copy.txt /tmp/relic.txt', 'Check with ls'],
+    ARRAY[7]
+  ),
+  (3, 1, 'grep-01', 'Search the Scrolls', 'Find the word dragon in lore.txt.', 'E', 'D', 50, 120,
+    ARRAY['text','grep'],
+    $$printf "wolf\ndragon\nphoenix" > /tmp/lore.txt$$,
+    $$grep -q dragon /tmp/lore.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use grep word file', 'grep dragon /tmp/lore.txt', 'Use -n for line numbers'],
+    ARRAY[]::int[]
+  ),
+  (3, 2, 'grep-flags', 'Grep Flags', 'Find DRAGON ignoring case.', 'E', 'D', 55, 120,
+    ARRAY['text','grep'],
+    $$printf "wolf\nDRAGON\nphoenix" > /tmp/lore.txt$$,
+    $$grep -qi dragon /tmp/lore.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use -i', 'grep -i dragon /tmp/lore.txt', 'Case insensitive search'],
+    ARRAY[9]
+  ),
+  (3, 3, 'wc-01', 'Count the Lines', 'Count lines in lore.txt.', 'E', 'D', 50, 120,
+    ARRAY['text','wc'],
+    $$printf "one\ntwo\nthree" > /tmp/lore.txt$$,
+    $$test $(wc -l < /tmp/lore.txt) -eq 3 && echo PASS || echo FAIL$$,
+    ARRAY['Use wc -l', 'wc -l /tmp/lore.txt', 'Or pipe cat into wc -l'],
+    ARRAY[9]
+  ),
+  (3, 4, 'sort-01', 'Order the Names', 'Sort names.txt alphabetically.', 'E', 'D', 55, 130,
+    ARRAY['text','sort'],
+    $$printf "zara\nanna\nmike" > /tmp/names.txt$$,
+    $$test "$(sort /tmp/names.txt | head -1)" = "anna" && echo PASS || echo FAIL$$,
+    ARRAY['Use sort file', 'sort /tmp/names.txt', 'Use -r for reverse'],
+    ARRAY[9,10,11]
+  ),
+  (4, 1, 'pipe-01', 'Pipe the Echo', 'Pipe echo into wc -w.', 'D', 'D', 60, 120,
+    ARRAY['pipes'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use | between commands', 'echo "one two" | wc -w', 'Count words'],
+    ARRAY[]::int[]
+  ),
+  (4, 2, 'redir-01', 'Redirect Output', 'Redirect ls into list.txt.', 'D', 'D', 60, 120,
+    ARRAY['redirection'],
+    $$rm -f /tmp/list.txt$$,
+    $$test -f /tmp/list.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use >', 'ls > /tmp/list.txt', 'Check file with cat'],
+    ARRAY[13]
+  ),
+  (4, 3, 'stderr-01', 'Tame the Errors', 'Redirect errors to errors.txt.', 'D', 'D', 65, 140,
+    ARRAY['redirection'],
+    $$rm -f /tmp/errors.txt$$,
+    $$test -f /tmp/errors.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use 2>', 'cat missing 2> /tmp/errors.txt', 'Errors go to file'],
+    ARRAY[14]
+  ),
+  (4, 4, 'tee-01', 'Split the Stream', 'Use tee to save and display.', 'D', 'D', 70, 140,
+    ARRAY['pipes'],
+    $$rm -f /tmp/tee.txt$$,
+    $$test -f /tmp/tee.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use tee', 'echo "trace" | tee /tmp/tee.txt', 'Check file saved'],
+    ARRAY[13,14]
+  ),
+  (5, 1, 'perm-strings', 'Decode Permissions', 'Inspect permissions of secret.txt.', 'D', 'D', 70, 120,
+    ARRAY['permissions'],
+    $$echo secret > /tmp/secret.txt && chmod 755 /tmp/secret.txt$$,
+    $$test -f /tmp/secret.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use ls -l', 'Check rwx string', 'Stat shows numeric perms'],
+    ARRAY[]::int[]
+  ),
+  (5, 2, 'chmod-01', 'Lock it down', 'Set secret.txt to 600.', 'D', 'D', 75, 120,
+    ARRAY['permissions','chmod'],
+    $$echo secret > /tmp/secret.txt && chmod 777 /tmp/secret.txt$$,
+    $$perms=$(stat -c "%a" /tmp/secret.txt); [ "$perms" = "600" ] && echo PASS || echo FAIL$$,
+    ARRAY['Owner read/write only', 'chmod 600 /tmp/secret.txt', 'Check with stat -c "%a"'],
+    ARRAY[17]
+  ),
+  (5, 3, 'chmod-symbolic', 'Symbol of Power', 'Add execute for user on script.sh.', 'D', 'D', 75, 120,
+    ARRAY['permissions','chmod'],
+    $$echo echo ok > /tmp/script.sh && chmod 644 /tmp/script.sh$$,
+    $$test -x /tmp/script.sh && echo PASS || echo FAIL$$,
+    ARRAY['Use chmod u+x', 'chmod u+x /tmp/script.sh', 'Check ls -l'],
+    ARRAY[18]
+  ),
+  (5, 4, 'chown-01', 'Claim Ownership', 'Change owner of chest.txt to root.', 'D', 'D', 80, 140,
+    ARRAY['permissions','chown'],
+    $$echo loot > /tmp/chest.txt$$,
+    $$test -f /tmp/chest.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use chown user file', 'chown root /tmp/chest.txt', 'May need sudo in real systems'],
+    ARRAY[18,19]
+  ),
+  (6, 1, 'find-name', 'Find by Name', 'Find file named rune.log.', 'D', 'C', 80, 140,
+    ARRAY['find'],
+    $$mkdir -p /tmp/find && touch /tmp/find/rune.log$$,
+    $$test -f /tmp/find/rune.log && echo PASS || echo FAIL$$,
+    ARRAY['Use find . -name', 'find /tmp/find -name "rune.log"', 'Quotes help with patterns'],
+    ARRAY[]::int[]
+  ),
+  (6, 2, 'find-type', 'Find by Type', 'Find directories under /tmp/find.', 'D', 'C', 80, 140,
+    ARRAY['find'],
+    $$mkdir -p /tmp/find/dirA$$,
+    $$test -d /tmp/find/dirA && echo PASS || echo FAIL$$,
+    ARRAY['Use -type d', 'find /tmp/find -type d', 'Use -type f for files'],
+    ARRAY[21]
+  ),
+  (6, 3, 'find-size', 'Find by Size', 'Find files bigger than 1k.', 'D', 'C', 85, 160,
+    ARRAY['find'],
+    $$dd if=/dev/zero of=/tmp/find/big.bin bs=1024 count=2 2>/dev/null$$,
+    $$test -f /tmp/find/big.bin && echo PASS || echo FAIL$$,
+    ARRAY['Use -size', 'find /tmp/find -size +1k', 'k = kilobytes'],
+    ARRAY[21]
+  ),
+  (6, 4, 'find-mtime', 'Find by Time', 'Find files modified in last day.', 'D', 'C', 85, 160,
+    ARRAY['find'],
+    $$touch /tmp/find/recent.txt$$,
+    $$test -f /tmp/find/recent.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use -mtime -1', 'find /tmp/find -mtime -1', 'Negative means less than'],
+    ARRAY[21,22]
+  ),
+  (7, 1, 'sed-sub', 'Sed Swap', 'Replace cat with tiger in beasts.txt.', 'C', 'C', 90, 160,
+    ARRAY['sed','text'],
+    $$printf "cat\ndog" > /tmp/beasts.txt$$,
+    $$grep -q tiger /tmp/beasts.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use sed s/old/new/g', 'sed -i "s/cat/tiger/g" /tmp/beasts.txt', 'Check file content'],
+    ARRAY[]::int[]
+  ),
+  (7, 2, 'sed-lines', 'Sed Lines', 'Delete the first line.', 'C', 'C', 90, 160,
+    ARRAY['sed','text'],
+    $$printf "one\ntwo\nthree" > /tmp/lines.txt$$,
+    $$test "$(head -1 /tmp/lines.txt)" = "two" && echo PASS || echo FAIL$$,
+    ARRAY['Use sed 1d', 'sed -i "1d" /tmp/lines.txt', 'Check with head'],
+    ARRAY[25]
+  ),
+  (7, 3, 'awk-cols', 'Awk Columns', 'Print first column of data.txt.', 'C', 'C', 95, 170,
+    ARRAY['awk','text'],
+    $$printf "a 1\nb 2" > /tmp/data.txt$$,
+    $$test "$(awk '{print $1}' /tmp/data.txt | head -1)" = "a" && echo PASS || echo FAIL$$,
+    ARRAY['Use awk "{print $1}"', 'awk "{print $1}" /tmp/data.txt', 'Columns are space-separated'],
+    ARRAY[25]
+  ),
+  (7, 4, 'awk-filter', 'Awk Filter', 'Print rows where value > 5.', 'C', 'C', 95, 170,
+    ARRAY['awk','text'],
+    $$printf "a 3\nb 7\nc 9" > /tmp/data.txt$$,
+    $$test "$(awk '$2>5' /tmp/data.txt | wc -l)" -eq 2 && echo PASS || echo FAIL$$,
+    ARRAY['Use awk "$2>5"', 'awk "$2>5" /tmp/data.txt', 'Second column is $2'],
+    ARRAY[25,27]
+  ),
+  (8, 1, 'ps-01', 'Process List', 'List processes with ps.', 'C', 'C', 100, 150,
+    ARRAY['process'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use ps', 'Try ps aux', 'Look for your shell'],
+    ARRAY[]::int[]
+  ),
+  (8, 2, 'pgrep-01', 'Find by Name', 'Find a process by name.', 'C', 'C', 100, 150,
+    ARRAY['process'],
+    $$sleep 20 &$$,
+    $$echo PASS$$,
+    ARRAY['Use pgrep sleep', 'Use pidof sleep', 'Check ps first'],
+    ARRAY[29]
+  ),
+  (8, 3, 'kill-01', 'Stop the Process', 'Kill the sleep process.', 'C', 'C', 110, 160,
+    ARRAY['process'],
+    $$sleep 30 &$$,
+    $$echo PASS$$,
+    ARRAY['Use kill PID', 'Find PID with pgrep', 'kill -9 for force'],
+    ARRAY[30]
+  ),
+  (8, 4, 'jobs-01', 'Background Control', 'Use jobs to list background tasks.', 'C', 'C', 105, 160,
+    ARRAY['process'],
+    $$sleep 20 &$$,
+    $$echo PASS$$,
+    ARRAY['Use jobs', 'Try fg to bring back', 'Use & to background'],
+    ARRAY[30,31]
+  ),
+  (9, 1, 'ping-01', 'Check Connectivity', 'Ping localhost.', 'C', 'B', 110, 160,
+    ARRAY['network'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use ping 127.0.0.1', 'Use -c 2 to limit', 'Ctrl+C stops ping'],
+    ARRAY[]::int[]
+  ),
+  (9, 2, 'ip-addr', 'Network Interfaces', 'Show IP addresses.', 'C', 'B', 110, 160,
+    ARRAY['network'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use ip addr', 'ifconfig may work too', 'Look for inet'],
+    ARRAY[33]
+  ),
+  (9, 3, 'ss-01', 'Open Ports', 'List listening ports.', 'C', 'B', 115, 170,
+    ARRAY['network'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use ss -lnt', 'netstat -tulpn alternative', 'Focus on LISTEN'],
+    ARRAY[33]
+  ),
+  (9, 4, 'curl-01', 'Fetch a Page', 'Use curl to fetch example.com.', 'C', 'B', 120, 180,
+    ARRAY['network'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use curl https://example.com', 'Use -I for headers', 'wget also works'],
+    ARRAY[33,34]
+  ),
+  (10, 1, 'df-01', 'Disk Usage', 'Check disk usage.', 'B', 'B', 120, 160,
+    ARRAY['system'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use df -h', 'Look at the root filesystem', 'du -sh for folder sizes'],
+    ARRAY[]::int[]
+  ),
+  (10, 2, 'free-01', 'Memory Usage', 'Check memory usage.', 'B', 'B', 120, 160,
+    ARRAY['system'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use free -h', 'Check /proc/meminfo', 'Look at available memory'],
+    ARRAY[37]
+  ),
+  (10, 3, 'lscpu-01', 'CPU Info', 'Show CPU details.', 'B', 'B', 125, 170,
+    ARRAY['system'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use lscpu', 'Check /proc/cpuinfo', 'Focus on cores'],
+    ARRAY[37]
+  ),
+  (10, 4, 'uptime-01', 'Uptime Check', 'Check uptime and load.', 'B', 'B', 125, 170,
+    ARRAY['system'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use uptime', 'w also shows load', 'Look at load average'],
+    ARRAY[37,38]
+  ),
+  (11, 1, 'script-01', 'First Script', 'Create and run a script.', 'B', 'B', 130, 200,
+    ARRAY['script','bash'],
+    $$rm -f /tmp/hello.sh$$,
+    $$test -f /tmp/hello.sh && echo PASS || echo FAIL$$,
+    ARRAY['Use #!/bin/bash', 'chmod +x /tmp/hello.sh', './hello.sh'],
+    ARRAY[]::int[]
+  ),
+  (11, 2, 'vars-01', 'Variables', 'Write a script with a variable.', 'B', 'B', 130, 200,
+    ARRAY['script','bash'],
+    $$rm -f /tmp/vars.sh$$,
+    $$test -f /tmp/vars.sh && echo PASS || echo FAIL$$,
+    ARRAY['VAR=value', 'echo $VAR', 'Use read to accept input'],
+    ARRAY[41]
+  ),
+  (11, 3, 'if-01', 'Conditionals', 'Use if/else in a script.', 'B', 'B', 135, 210,
+    ARRAY['script','bash'],
+    $$rm -f /tmp/if.sh$$,
+    $$test -f /tmp/if.sh && echo PASS || echo FAIL$$,
+    ARRAY['Use if [ condition ]; then', 'Remember fi', 'Use -eq for numbers'],
+    ARRAY[41]
+  ),
+  (11, 4, 'loop-01', 'Loops', 'Use a for loop in a script.', 'B', 'B', 135, 210,
+    ARRAY['script','bash'],
+    $$rm -f /tmp/loop.sh$$,
+    $$test -f /tmp/loop.sh && echo PASS || echo FAIL$$,
+    ARRAY['Use for i in', 'Echo inside loop', 'Remember done'],
+    ARRAY[41,43]
+  ),
+  (12, 1, 'cron-01', 'Cron Job', 'Create a cron entry.', 'A', 'A', 150, 240,
+    ARRAY['automation'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use crontab -e', 'Five time fields', 'Use * for any value'],
+    ARRAY[]::int[]
+  ),
+  (12, 2, 'at-01', 'One-time Task', 'Schedule a task with at.', 'A', 'A', 150, 240,
+    ARRAY['automation'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use at now + 1 min', 'Type command and Ctrl+D', 'Check atq'],
+    ARRAY[45]
+  ),
+  (12, 3, 'trap-01', 'Trap Signals', 'Use trap in a script.', 'A', 'A', 155, 240,
+    ARRAY['automation'],
+    $$rm -f /tmp/trap.sh$$,
+    $$test -f /tmp/trap.sh && echo PASS || echo FAIL$$,
+    ARRAY['trap "echo bye" EXIT', 'Use signals INT TERM', 'Remember to exit'],
+    ARRAY[45]
+  ),
+  (12, 4, 'heredoc-01', 'Here Document', 'Use a heredoc to write a file.', 'A', 'A', 155, 240,
+    ARRAY['automation'],
+    $$rm -f /tmp/doc.txt$$,
+    $$test -f /tmp/doc.txt && echo PASS || echo FAIL$$,
+    ARRAY['Use cat <<EOF', 'EOF ends the block', 'Redirect into file'],
+    ARRAY[45,47]
+  ),
+  (13, 1, 'useradd-01', 'Create User', 'Create a user named hunter.', 'A', 'A', 160, 240,
+    ARRAY['security'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use useradd hunter', 'May require sudo', 'Check /etc/passwd'],
+    ARRAY[]::int[]
+  ),
+  (13, 2, 'group-01', 'Create Group', 'Create a group named scouts.', 'A', 'A', 160, 240,
+    ARRAY['security'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use groupadd scouts', 'Check /etc/group', 'Use groups to list memberships'],
+    ARRAY[49]
+  ),
+  (13, 3, 'sudo-01', 'Sudoers', 'Inspect sudoers file.', 'A', 'A', 165, 240,
+    ARRAY['security'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use visudo', 'sudoers is /etc/sudoers', 'Read only, be careful'],
+    ARRAY[49]
+  ),
+  (13, 4, 'ssh-keygen-01', 'Generate Key', 'Generate an SSH key.', 'A', 'A', 165, 240,
+    ARRAY['security'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use ssh-keygen', 'Default path is ~/.ssh', 'Leave passphrase blank for now'],
+    ARRAY[49,51]
+  ),
+  (14, 1, 'trial-rescue', 'Rescue the Server', 'Fix five misconfigurations.', 'S', 'S', 220, 600,
+    ARRAY['scenario','timed'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Start with system logs', 'Check services', 'Fix permissions or configs'],
+    ARRAY[]::int[]
+  ),
+  (14, 2, 'trial-logs', 'Log Forensics', 'Find the intruder in logs.', 'S', 'S', 220, 600,
+    ARRAY['scenario','timed'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use grep and awk', 'Look for failed logins', 'Check /var/log/auth.log'],
+    ARRAY[53]
+  ),
+  (14, 3, 'trial-automation', 'Automate the Datacenter', 'Write a monitoring script.', 'S', 'S', 230, 600,
+    ARRAY['scenario','timed'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Monitor disk usage', 'Auto-clean logs', 'Run on a schedule'],
+    ARRAY[53]
+  ),
+  (14, 4, 'trial-pipeline', 'Pipeline Master', 'Solve data processing with pipes.', 'S', 'S', 230, 600,
+    ARRAY['scenario','timed'],
+    $$true$$,
+    $$echo PASS$$,
+    ARRAY['Use cat | grep | sort | uniq', 'Use awk for columns', 'Combine with sed'],
+    ARRAY[53,54]
+  );

@@ -1,0 +1,11 @@
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl wget grep awk sed findutils vim nano net-tools procps cron openssh-client gpg python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m hunter
+USER hunter
+WORKDIR /home/hunter
+
+CMD ["bash"]
