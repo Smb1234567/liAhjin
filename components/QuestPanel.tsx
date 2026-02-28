@@ -20,7 +20,7 @@ export default function QuestPanel({ title, quests }: { title: string; quests: Q
               </div>
               <p className="text-xs text-gray-500 mb-2">{quest.description}</p>
               <div className="h-2 rounded-full bg-gray-800 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-[width] duration-[600ms] ease-out" style={{ width: `${percent}%` }} />
+                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-[width] duration-[300ms] ease-out" style={{ width: `${percent}%` }} />
               </div>
             </div>
           );

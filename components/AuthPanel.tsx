@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 
 export default function AuthPanel() {
   const [email, setEmail] = useState('');
@@ -17,6 +17,11 @@ export default function AuthPanel() {
     }
     let cancelled = false;
     const run = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setOffline(true);
+        return;
+      }
       try {
         const session = await supabase.auth.getSession();
         if (cancelled) return;
@@ -27,9 +32,10 @@ export default function AuthPanel() {
       }
     };
     run();
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const supabase = getSupabaseClient();
+    const { data } = supabase?.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null);
-    });
+    }) ?? { data: { subscription: { unsubscribe: () => undefined } } };
 
     return () => {
       cancelled = true;
@@ -38,6 +44,8 @@ export default function AuthPanel() {
   }, []);
 
   const signInWithGitHub = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: { redirectTo: `${window.location.origin}/dashboard` }
@@ -46,6 +54,8 @@ export default function AuthPanel() {
 
   const signInWithEmail = async () => {
     if (!email) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
     await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${window.location.origin}/dashboard` }
@@ -53,6 +63,8 @@ export default function AuthPanel() {
   };
 
   const signOut = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
     await supabase.auth.signOut();
   };
 

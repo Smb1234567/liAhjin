@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import HintAccordion from './HintAccordion';
 import ChallengeSession from './ChallengeSession';
 import { Badge } from './ui/badge';
@@ -27,6 +28,34 @@ type ChallengeArenaProps = {
 export default function ChallengeArena({ challenge, dataSource, chapterChallenges }: ChallengeArenaProps) {
   const [revealedHints, setRevealedHints] = useState<number[]>([]);
   const [solved, setSolved] = useState(false);
+  const router = useRouter();
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const nextSlug = useMemo(() => {
+    const list = chapterChallenges
+      .filter((item) => item.chapter_id === challenge.chapter_id)
+      .sort((a, b) => a.order_index - b.order_index)
+      .map((item) => item.slug);
+    const idx = list.indexOf(challenge.slug);
+    return idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
+  }, [chapterChallenges, challenge.chapter_id, challenge.slug]);
+
+  const handleSolved = () => {
+    setSolved(true);
+    if (nextSlug) {
+      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+      advanceTimer.current = setTimeout(() => {
+        router.push(`/challenges/${nextSlug}`);
+      }, 900);
+    }
+  };
+
+  // Clear timer when unmounting to avoid pushing after leave.
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    };
+  }, []);
   const chapterChallengeSlugs = chapterChallenges
     .filter((item) => item.chapter_id === challenge.chapter_id)
     .sort((a, b) => a.order_index - b.order_index)
@@ -85,8 +114,13 @@ export default function ChallengeArena({ challenge, dataSource, chapterChallenge
           timeLimitSeconds={challenge.time_limit_seconds}
           hintsUsed={revealedHints.length}
           tags={challenge.tags ?? []}
-          onSolved={() => setSolved(true)}
+          onSolved={handleSolved}
         />
+        {solved && (
+          <div className="mt-2 text-sm text-emerald-300">
+            Cleared! {nextSlug ? `Loading next challenge...` : `Chapter complete.`}
+          </div>
+        )}
       </div>
     </main>
   );

@@ -5,16 +5,16 @@ import { useEffect, useState } from 'react';
 import { getLocalProgress } from '../lib/localProgress';
 import { buildChallengeStatuses, type ChallengeInput } from '../lib/unlockRules';
 
-type ChallengeRow = ChallengeInput & {
+type ChallengeRowInput = ChallengeInput & {
   title: string;
   xp_reward: number;
   time_limit_seconds: number;
   difficulty: string;
-  unlocked: boolean;
-  completed: boolean;
 };
 
-export default function ChapterChallengesClient({ challenges }: { challenges: ChallengeRow[] }) {
+type ChallengeRow = ChallengeRowInput & { unlocked: boolean; completed: boolean };
+
+export default function ChapterChallengesClient({ challenges }: { challenges: ChallengeRowInput[] }) {
   const [rows, setRows] = useState<ChallengeRow[]>([]);
 
   useEffect(() => {

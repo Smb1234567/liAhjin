@@ -2,6 +2,10 @@ import './globals.css';
 import type { Metadata } from 'next';
 import CloudStatusBanner from '../components/CloudStatusBanner';
 import PageTransition from '../components/PageTransition';
+import RouteProgressBar from '../components/RouteProgressBar';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: 'LinuxHunter',
@@ -22,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-gray-950 text-gray-100 min-h-screen">
         <CloudStatusBanner />
         <PageTransition>{children}</PageTransition>
+        <RouteProgressBar />
       </body>
     </html>
   );
