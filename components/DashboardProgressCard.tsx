@@ -31,7 +31,10 @@ export default function DashboardProgressCard() {
       <LevelUpOverlay show={showLevelUp} />
       <div className="glow-panel rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl">Level {progress.level}</h2>
+          <div>
+            <div className="system-title">System Status</div>
+            <h2 className="font-display text-2xl">Level {progress.level}</h2>
+          </div>
           <RankBadge rank={progress.rank} />
         </div>
         <div className="flex items-center justify-between text-sm text-gray-400">

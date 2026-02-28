@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import Terminal from './Terminal';
+import { Button } from './ui/button';
 import { recordChallengeResult } from '../lib/localProgress';
 
 export type ChallengeSessionProps = {
   challengeId: number;
   slug: string;
+  chapterId: number;
+  chapterChallengeSlugs: string[];
   setupScript: string | null;
   validatorScript: string | null;
   xpReward: number;
   timeLimitSeconds: number;
   hintsUsed: number;
+  tags: string[];
+  onSolved?: () => void;
 };
 
 function formatSeconds(totalSeconds: number) {
@@ -23,11 +28,15 @@ function formatSeconds(totalSeconds: number) {
 export default function ChallengeSession({
   challengeId,
   slug,
+  chapterId,
+  chapterChallengeSlugs,
   setupScript,
   validatorScript,
   xpReward,
   timeLimitSeconds,
-  hintsUsed
+  hintsUsed,
+  tags,
+  onSolved
 }: ChallengeSessionProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [websocketUrl, setWebsocketUrl] = useState<string | null>(null);
@@ -48,6 +57,13 @@ export default function ChallengeSession({
     }, 1000);
     return () => window.clearInterval(interval);
   }, [sessionId, startedAt, timeLimitSeconds]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    return () => {
+      fetch(`/api/sandbox/session/${sessionId}`, { method: 'DELETE' }).catch(() => undefined);
+    };
+  }, [sessionId]);
 
   const createSession = async () => {
     setStatus('running');
@@ -77,7 +93,8 @@ export default function ChallengeSession({
       body: JSON.stringify({ session_id: sessionId, validator_script: validatorScript })
     });
     const data = await res.json();
-    setAttempts((prev) => prev + 1);
+    const attemptCount = attempts + 1;
+    setAttempts(attemptCount);
     if (data.result === 'PASS') {
       setStatus('pass');
       const timeTakenSeconds = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
@@ -87,10 +104,14 @@ export default function ChallengeSession({
         hintsUsed,
         timeTakenSeconds,
         parTimeSeconds: timeLimitSeconds,
-        attempts: 1
+        attempts: attemptCount,
+        tags,
+        chapterId,
+        chapterChallengeSlugs
       });
       setXpAwarded(result.xpAwarded);
       setLevelUps(result.levelUps);
+      onSolved?.();
     } else {
       setStatus('fail');
     }
@@ -110,20 +131,19 @@ export default function ChallengeSession({
         <Terminal websocketUrl={websocketUrl ?? undefined} />
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
-        <button
+        <Button
           onClick={createSession}
-          className="rounded-full border border-gray-700 px-4 py-2 text-sm text-gray-200"
+          variant="outline"
           disabled={status === 'running' && !!sessionId}
         >
           {sessionId ? 'Session Active' : 'Start Session'}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={submit}
-          className="rounded-full bg-amber-400 px-4 py-2 text-sm text-gray-950"
-          disabled={!sessionId || remainingSeconds <= 0}
+          disabled={!sessionId || remainingSeconds <= 0 || status === 'pass'}
         >
           Submit for Validation
-        </button>
+        </Button>
         {status === 'pass' && <span className="text-green-400 text-sm">PASS — +{xpAwarded} XP.</span>}
         {status === 'fail' && <span className="text-red-400 text-sm">FAIL — try again.</span>}
         {status === 'error' && <span className="text-red-400 text-sm">Session error.</span>}

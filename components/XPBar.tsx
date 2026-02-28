@@ -3,7 +3,7 @@ export default function XPBar({ current, next }: { current: number; next: number
   return (
     <div className="relative h-3 rounded-full bg-gray-800 overflow-hidden xp-bar">
       <div
-        className="h-full bg-gradient-to-r from-yellow-400 to-amber-600 transition-all"
+        className="h-full bg-gradient-to-r from-yellow-400 to-amber-600 transition-[width] duration-[600ms] ease-out"
         style={{ width: `${percent}%` }}
       />
     </div>

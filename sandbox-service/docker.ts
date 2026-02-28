@@ -1,4 +1,5 @@
-import Docker from 'dockerode';
+import Docker, { type ExecStartOptions } from 'dockerode';
+import type { Duplex } from 'stream';
 
 const docker = new Docker();
 
@@ -36,10 +37,11 @@ export async function execInContainer(containerId: string, script: string): Prom
   });
 
   return new Promise((resolve, reject) => {
-    exec.start((err, stream) => {
-      if (err || !stream) return reject(err);
+    const options: ExecStartOptions = { hijack: true, stdin: false };
+    exec.start(options, (err: Error | null, stream: Duplex | undefined) => {
+      if (err || !stream) return reject(err ?? new Error('Exec stream missing.'));
       let output = '';
-      stream.on('data', (chunk) => {
+      stream.on('data', (chunk: Buffer) => {
         output += chunk.toString();
       });
       stream.on('end', () => resolve(output.trim()));

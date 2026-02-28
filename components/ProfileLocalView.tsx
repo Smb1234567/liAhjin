@@ -3,25 +3,23 @@
 import { useMemo } from 'react';
 import HunterCard from './HunterCard';
 import { getLocalProgress } from '../lib/localProgress';
+import { TITLES } from '../lib/titles';
 
-function deriveTitles(progress: ReturnType<typeof getLocalProgress>) {
-  const titles: string[] = [];
-  if (progress.completedChallenges.length >= 1) titles.push('The Awakened One');
-  if (progress.completedChallenges.includes('pipe-01')) titles.push('Pipe Dream');
-  if (progress.hintsUsedTotal === 0 && progress.completedChallenges.length >= 3) titles.push('Silent Hunter');
-  if (progress.rank === 'S' || progress.rank === 'SS' || progress.rank === 'SSS') titles.push('S-Rank Hunter');
-  return titles.length ? titles : ['Rising Hunter'];
+function resolveTitles(progress: ReturnType<typeof getLocalProgress>) {
+  if (!progress.titles.length) return ['Rising Hunter'];
+  const labelByKey = new Map(TITLES.map((title) => [title.key, title.label]));
+  return progress.titles.map((key) => labelByKey.get(key) ?? key);
 }
 
 export default function ProfileLocalView({ username }: { username: string }) {
   const progress = useMemo(() => getLocalProgress(), []);
-  const titles = useMemo(() => deriveTitles(progress), [progress]);
+  const titles = useMemo(() => resolveTitles(progress), [progress]);
 
   const stats = {
-    STR: Math.min(10, Math.floor(progress.completedChallenges.length / 2) + 1),
-    INT: Math.min(10, Math.floor((progress.totalXp || 0) / 120) + 1),
-    AGI: Math.min(10, Math.max(1, 10 - Math.floor(progress.hintsUsedTotal / 2))),
-    END: Math.min(10, progress.streak + 1)
+    STR: Math.min(10, Math.max(1, progress.stats.STR)),
+    INT: Math.min(10, Math.max(1, progress.stats.INT)),
+    AGI: Math.min(10, Math.max(1, progress.stats.AGI)),
+    END: Math.min(10, Math.max(1, progress.stats.END))
   };
 
   const max = 10;
@@ -34,7 +32,7 @@ export default function ProfileLocalView({ username }: { username: string }) {
     .map((point) => point.join(','))
     .join(' ');
 
-  const chapterEstimate = Math.min(14, Math.max(1, Math.floor(progress.completedChallenges.length / 4)));
+  const chapterEstimate = Math.min(14, progress.completedChapterIds.length);
 
   return (
     <main className="min-h-screen bg-gray-950">

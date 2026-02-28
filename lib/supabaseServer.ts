@@ -5,6 +5,9 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 export function supabaseServer() {
+  if (process.env.SUPABASE_DISABLED === '1') {
+    throw new Error('Supabase disabled by SUPABASE_DISABLED.');
+  }
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
   }

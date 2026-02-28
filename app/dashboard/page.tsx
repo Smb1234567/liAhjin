@@ -1,15 +1,46 @@
-import QuestPanel from '../../components/QuestPanel';
 import Link from 'next/link';
 import AuthPanel from '../../components/AuthPanel';
-import RankExamPanel from '../../components/RankExamPanel';
-import { examCooldownRemaining, isRankExamUnlocked } from '../../lib/rankExams';
+import DashboardRankExamCard from '../../components/DashboardRankExamCard';
+import DashboardQuestPanels from '../../components/DashboardQuestPanels';
 import DashboardProgressCard from '../../components/DashboardProgressCard';
+import { localChapters } from '../../lib/localChapterData';
+import { fallbackChallenges } from '../../lib/localChallengeData';
+import { supabaseServer } from '../../lib/supabaseServer';
 
-export default function DashboardPage() {
-  const completedChapterIds = [1, 2];
-  const currentRank = 'D' as const;
-  const examUnlocked = isRankExamUnlocked(currentRank, completedChapterIds);
-  const cooldownMs = examCooldownRemaining(null);
+export default async function DashboardPage() {
+  let chapters: Array<{
+    id: number;
+    order_index: number;
+    title: string;
+    rank_required: string;
+  }> = [];
+  let challenges: Array<{
+    id: number;
+    slug: string;
+    chapter_id: number;
+    order_index: number;
+  }> = [];
+
+  try {
+    const supabase = supabaseServer();
+    const { data: chapterData, error } = await supabase.from('chapters').select('*').order('order_index');
+    if (error) throw error;
+    chapters = chapterData ?? [];
+    const { data: challengeData, error: challengeError } = await supabase
+      .from('challenges')
+      .select('id, slug, chapter_id, order_index')
+      .order('order_index');
+    if (challengeError) throw challengeError;
+    challenges = challengeData ?? [];
+  } catch {
+    chapters = localChapters;
+    challenges = fallbackChallenges.map((challenge) => ({
+      id: challenge.id,
+      slug: challenge.slug,
+      chapter_id: challenge.chapter_id,
+      order_index: challenge.order_index
+    }));
+  }
 
   return (
     <main className="min-h-screen bg-gray-950">
@@ -24,21 +55,8 @@ export default function DashboardPage() {
 
         <div className="grid gap-6 md:grid-cols-2">
           <AuthPanel />
-          <RankExamPanel currentRank={currentRank} unlocked={examUnlocked} cooldownMs={cooldownMs} />
-          <QuestPanel
-            title="Daily Quests"
-            quests={[
-              { title: 'Three Strikes', description: 'Complete 3 challenges today.', progress: 1, goal: 3 },
-              { title: 'No Hints', description: 'Solve one challenge without hints.', progress: 0, goal: 1 }
-            ]}
-          />
-          <QuestPanel
-            title="Weekly Quests"
-            quests={[
-              { title: 'Chapter Conqueror', description: 'Complete an entire chapter.', progress: 2, goal: 6 },
-              { title: 'Permission Patrol', description: 'Solve 5 permission challenges.', progress: 3, goal: 5 }
-            ]}
-          />
+          <DashboardRankExamCard chapters={chapters} challenges={challenges} />
+          <DashboardQuestPanels />
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">

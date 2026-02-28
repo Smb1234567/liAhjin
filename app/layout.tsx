@@ -1,5 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import CloudStatusBanner from '../components/CloudStatusBanner';
+import PageTransition from '../components/PageTransition';
 
 export const metadata: Metadata = {
   title: 'LinuxHunter',
@@ -18,7 +20,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-gray-950 text-gray-100 min-h-screen">
-        {children}
+        <CloudStatusBanner />
+        <PageTransition>{children}</PageTransition>
       </body>
     </html>
   );

@@ -6,18 +6,34 @@ import { supabase } from '../lib/supabase';
 export default function AuthPanel() {
   const [email, setEmail] = useState('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const session = supabase.auth.getSession().then(({ data }) => {
-      setUserEmail(data.session?.user.email ?? null);
-    });
+    const status = typeof window !== 'undefined' ? window.localStorage.getItem('linuxhunter_cloud_status') : null;
+    if (status === 'down') {
+      setOffline(true);
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const session = await supabase.auth.getSession();
+        if (cancelled) return;
+        setUserEmail(session.data.session?.user.email ?? null);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'Auth unavailable');
+      }
+    };
+    run();
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null);
     });
 
     return () => {
+      cancelled = true;
       data.subscription.unsubscribe();
-      void session;
     };
   }, []);
 
@@ -43,7 +59,9 @@ export default function AuthPanel() {
   return (
     <div className="glow-panel rounded-xl p-5 space-y-3">
       <h3 className="font-display text-2xl">Account Access</h3>
-      {userEmail ? (
+      {offline ? (
+        <div className="text-sm text-amber-300">Auth unavailable in local fallback mode.</div>
+      ) : userEmail ? (
         <div className="space-y-2">
           <p className="text-sm text-gray-300">Signed in as {userEmail}</p>
           <button onClick={signOut} className="rounded-full border border-gray-700 px-4 py-2 text-sm">
@@ -52,6 +70,7 @@ export default function AuthPanel() {
         </div>
       ) : (
         <div className="space-y-3">
+          {error && <div className="text-xs text-red-400">{error}</div>}
           <button onClick={signInWithGitHub} className="w-full rounded-full bg-amber-400 px-4 py-2 text-gray-950">
             Continue with GitHub
           </button>

@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import HintAccordion from './HintAccordion';
 import ChallengeSession from './ChallengeSession';
+import { Badge } from './ui/badge';
 
 type ChallengeArenaProps = {
+  dataSource: 'cloud' | 'local';
   challenge: {
     id: number;
+    chapter_id: number;
     slug: string;
     title: string;
     description: string;
@@ -18,16 +21,28 @@ type ChallengeArenaProps = {
     setup_script: string | null;
     validator_script: string | null;
   };
+  chapterChallenges: Array<{ id: number; slug: string; chapter_id: number; order_index: number }>;
 };
 
-export default function ChallengeArena({ challenge }: ChallengeArenaProps) {
+export default function ChallengeArena({ challenge, dataSource, chapterChallenges }: ChallengeArenaProps) {
   const [revealedHints, setRevealedHints] = useState<number[]>([]);
+  const [solved, setSolved] = useState(false);
+  const chapterChallengeSlugs = chapterChallenges
+    .filter((item) => item.chapter_id === challenge.chapter_id)
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((item) => item.slug);
 
   return (
     <main className="min-h-screen bg-gray-950">
       <div className="mx-auto max-w-6xl px-6 py-10 grid gap-8 lg:grid-cols-[1fr_1.1fr]">
         <section className="space-y-6">
           <div className="glow-panel rounded-xl p-6">
+            <div className="mb-3">
+              <Badge variant={dataSource === 'cloud' ? 'secondary' : 'default'}>
+                {dataSource === 'cloud' ? 'Cloud' : 'Local Fallback'}
+              </Badge>
+            </div>
+            <div className="system-title">Dungeon Briefing</div>
             <h1 className="font-display text-3xl">{challenge.title}</h1>
             <p className="text-gray-400">{challenge.description}</p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-400">
@@ -50,6 +65,7 @@ export default function ChallengeArena({ challenge }: ChallengeArenaProps) {
             <div className="mt-4">
               <HintAccordion
                 hints={challenge.hints ?? []}
+                disabled={solved}
                 onReveal={(index) => {
                   setRevealedHints((prev) => (prev.includes(index) ? prev : [...prev, index]));
                 }}
@@ -61,11 +77,15 @@ export default function ChallengeArena({ challenge }: ChallengeArenaProps) {
         <ChallengeSession
           challengeId={challenge.id}
           slug={challenge.slug}
+          chapterId={challenge.chapter_id}
+          chapterChallengeSlugs={chapterChallengeSlugs}
           setupScript={challenge.setup_script}
           validatorScript={challenge.validator_script}
           xpReward={challenge.xp_reward}
           timeLimitSeconds={challenge.time_limit_seconds}
           hintsUsed={revealedHints.length}
+          tags={challenge.tags ?? []}
+          onSolved={() => setSolved(true)}
         />
       </div>
     </main>

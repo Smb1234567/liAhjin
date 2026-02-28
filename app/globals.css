@@ -4,6 +4,16 @@
 
 :root {
   color-scheme: dark;
+  --bg-base: #0b0f16;
+  --bg-deep: #0f172a;
+  --bg-panel: #131a24;
+  --bg-panel-2: #0f1520;
+  --line: rgba(148, 163, 184, 0.12);
+  --glow: rgba(248, 184, 78, 0.15);
+  --gold: #f8b84e;
+  --cyan: #60e1ff;
+  --text-primary: #e5e7eb;
+  --text-muted: #9ca3af;
 }
 
 * {
@@ -12,6 +22,11 @@
 
 body {
   font-family: 'Space Mono', monospace;
+  background:
+    radial-gradient(1200px 500px at 10% -20%, rgba(96, 225, 255, 0.08), transparent 60%),
+    radial-gradient(800px 400px at 90% -10%, rgba(248, 184, 78, 0.12), transparent 60%),
+    var(--bg-base);
+  color: var(--text-primary);
 }
 
 .font-display {
@@ -19,9 +34,12 @@ body {
 }
 
 .glow-panel {
-  background: linear-gradient(145deg, rgba(15,23,42,0.85), rgba(2,6,23,0.95));
-  border: 1px solid rgba(248, 250, 252, 0.08);
-  box-shadow: 0 0 25px rgba(15, 23, 42, 0.6);
+  background: linear-gradient(180deg, rgba(19, 26, 36, 0.92), rgba(15, 21, 32, 0.98));
+  border: 1px solid var(--line);
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.4),
+    0 20px 40px -30px rgba(0, 0, 0, 0.75),
+    0 0 40px -20px var(--glow);
 }
 
 .rank-glow {
@@ -43,4 +61,25 @@ body {
   inset: 0;
   background: linear-gradient(90deg, rgba(250,204,21,0.15), rgba(234,179,8,0.8));
   opacity: 0.2;
+}
+
+.chapter-node {
+  transition: transform 200ms ease-out, border-color 200ms ease-out, box-shadow 250ms ease-out;
+}
+
+.chapter-node--unlocked:hover {
+  transform: translateY(-2px);
+  border-color: rgba(248, 184, 78, 0.35);
+  box-shadow: 0 0 24px rgba(248, 184, 78, 0.2);
+}
+
+.chapter-node--current {
+  box-shadow: 0 0 24px rgba(248, 184, 78, 0.3);
+}
+
+.system-title {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-size: 0.7rem;
 }

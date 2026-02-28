@@ -5,9 +5,10 @@ import { useState } from 'react';
 type HintAccordionProps = {
   hints: string[];
   onReveal?: (index: number) => void;
+  disabled?: boolean;
 };
 
-export default function HintAccordion({ hints, onReveal }: HintAccordionProps) {
+export default function HintAccordion({ hints, onReveal, disabled }: HintAccordionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [revealed, setRevealed] = useState<boolean[]>(() => hints.map(() => false));
 
@@ -20,6 +21,7 @@ export default function HintAccordion({ hints, onReveal }: HintAccordionProps) {
             type="button"
             key={hint}
             onClick={() => {
+              if (disabled) return;
               setOpenIndex(isOpen ? null : index);
               if (!revealed[index]) {
                 const next = [...revealed];
@@ -28,7 +30,10 @@ export default function HintAccordion({ hints, onReveal }: HintAccordionProps) {
                 onReveal?.(index);
               }
             }}
-            className="w-full rounded-lg border border-gray-800 bg-gray-900/60 p-3 text-left"
+            className={`w-full rounded-lg border border-gray-800 bg-gray-900/60 p-3 text-left ${
+              disabled ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
+            disabled={disabled}
           >
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-300">Hint {index + 1}</span>

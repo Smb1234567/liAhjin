@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import RankBadge from './RankBadge';
 import { getLocalProgress } from '../lib/localProgress';
+import { TITLES } from '../lib/titles';
 
 type Row = {
   position: number;
@@ -16,6 +17,8 @@ type Row = {
 export default function LeaderboardLocalView() {
   const rows = useMemo(() => {
     const progress = getLocalProgress();
+    const labelByKey = new Map(TITLES.map((title) => [title.key, title.label]));
+    const topTitle = progress.titles.length ? labelByKey.get(progress.titles[0]) ?? progress.titles[0] : 'Rising Hunter';
     const seed: Omit<Row, 'position'>[] = [
       { username: 'shadowfox', rank: 'A', title: 'Pipe Dream', xp: 8200, streak: 14 },
       { username: 'kernelkid', rank: 'B', title: 'The Awakened One', xp: 7600, streak: 9 },
@@ -25,7 +28,7 @@ export default function LeaderboardLocalView() {
     seed.push({
       username: 'you',
       rank: progress.rank,
-      title: progress.completedChallenges.length ? 'The Awakened One' : 'Rising Hunter',
+      title: topTitle,
       xp: progress.totalXp,
       streak: progress.streak
     });

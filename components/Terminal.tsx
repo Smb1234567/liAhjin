@@ -10,9 +10,17 @@ type TerminalProps = {
 
 export default function Terminal({ websocketUrl }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const termRef = useRef<XTerm | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    wsRef.current?.close();
+    wsRef.current = null;
+    termRef.current?.dispose();
+    termRef.current = null;
 
     const term = new XTerm({
       fontFamily: 'Space Mono, monospace',
@@ -22,36 +30,49 @@ export default function Terminal({ websocketUrl }: TerminalProps) {
         foreground: '#e5e7eb'
       }
     });
-    term.open(containerRef.current);
-    term.writeln('Initializing sandbox...');
+    termRef.current = term;
 
-    if (!websocketUrl) {
-      term.writeln('No active session. Start a challenge to connect.');
-      return () => term.dispose();
-    }
+    const openTerminal = () => {
+      if (!container || termRef.current !== term) return;
+      if (container.clientWidth === 0 || container.clientHeight === 0) {
+        requestAnimationFrame(openTerminal);
+        return;
+      }
+      term.open(container);
+      term.writeln('Initializing sandbox...');
+      if (!websocketUrl) {
+        term.writeln('No active session. Start a challenge to connect.');
+        return;
+      }
 
-    const ws = new WebSocket(websocketUrl);
+      const ws = new WebSocket(websocketUrl);
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      term.writeln('Connected.');
-      term.onData((data) => ws.send(data));
+      ws.onopen = () => {
+        term.writeln('Connected.');
+        const disposer = term.onData((data) => ws.send(data));
+        ws.onclose = () => {
+          disposer.dispose();
+          term.writeln('\r\nSession closed.');
+        };
+      };
+
+      ws.onmessage = (event) => {
+        term.write(event.data);
+      };
+
+      ws.onerror = () => {
+        term.writeln('\r\nConnection error.');
+      };
     };
 
-    ws.onmessage = (event) => {
-      term.write(event.data);
-    };
-
-    ws.onclose = () => {
-      term.writeln('\r\nSession closed.');
-    };
-
-    ws.onerror = () => {
-      term.writeln('\r\nConnection error.');
-    };
+    requestAnimationFrame(openTerminal);
 
     return () => {
-      ws.close();
-      term.dispose();
+      wsRef.current?.close();
+      wsRef.current = null;
+      termRef.current?.dispose();
+      termRef.current = null;
     };
   }, [websocketUrl]);
 
