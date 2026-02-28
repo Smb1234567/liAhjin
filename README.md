@@ -237,6 +237,14 @@ This project is licensed under the **MIT License** — even the System believes 
 
 ---
 
+## ⚠️ Disclaimer
+
+> **Hunter Cha Hae-In will NOT be appearing in this dungeon.**
+> 
+> This platform is for learning Linux commands, not hunting high-rank monsters. Please do not summon shadows or expect the Shadow Monarch to show up. The only thing you'll be commanding is your terminal. 🖤
+
+---
+
 <div align="center">
 
 ### 🎮 Ready to begin your journey?
