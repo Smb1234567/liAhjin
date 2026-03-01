@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { ClerkProvider } from '@clerk/nextjs';
 import CloudStatusBanner from '../components/CloudStatusBanner';
 import PageTransition from '../components/PageTransition';
 import RouteProgressBar from '../components/RouteProgressBar';
@@ -14,20 +15,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="bg-gray-950 text-gray-100 min-h-screen">
-        <CloudStatusBanner />
-        <PageTransition>{children}</PageTransition>
-        <RouteProgressBar />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600;700&display=swap"
+            rel="stylesheet"
+          />
+        </head>
+        <body className="min-h-screen">
+          <CloudStatusBanner />
+          <PageTransition>{children}</PageTransition>
+          <RouteProgressBar />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

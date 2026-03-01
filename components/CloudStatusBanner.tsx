@@ -14,7 +14,7 @@ export default function CloudStatusBanner() {
     let cancelled = false;
     const run = async () => {
       try {
-        const res = await fetch('/api/health/supabase', { cache: 'no-store' });
+        const res = await fetch('/api/health/db', { cache: 'no-store' });
         if (!res.ok) {
           if (cancelled) return;
           setState({ status: 'down', message: `Health check failed (${res.status})` });
@@ -29,7 +29,7 @@ export default function CloudStatusBanner() {
         }
         if (cancelled) return;
         if (data?.ok) {
-          setState({ status: 'ok', host: data.host ?? 'supabase.co' });
+          setState({ status: 'ok', host: data.host ?? 'database' });
           localStorage.setItem('linuxhunter_cloud_status', 'ok');
           return;
         }
@@ -53,16 +53,17 @@ export default function CloudStatusBanner() {
 
   if (state.status === 'ok') {
     return (
-      <div className="w-full border-b border-emerald-500/30 bg-emerald-500/10 text-emerald-200">
-        <div className="mx-auto max-w-6xl px-6 py-2 text-xs">
-          Cloud status: connected to {state.host}
+      <div className="w-full border-b border-[#60e1ff]/35 bg-[#60e1ff]/10 text-[#a7f0ff]">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2 text-xs">
+          <span className="tracking-wide">Cloud status: connected</span>
+          <span className="hidden text-[#a7f0ff]/70 md:inline">{state.host}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full border-b border-amber-500/30 bg-amber-500/10 text-amber-200">
+    <div className="w-full border-b border-[#f8b84e]/35 bg-[#f8b84e]/10 text-[#ffd792]">
       <div className="mx-auto max-w-6xl px-6 py-2 text-xs">
         Cloud status: unreachable. Running in local fallback mode. ({state.message})
       </div>

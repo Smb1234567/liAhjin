@@ -23,11 +23,14 @@ export default function Terminal({ websocketUrl }: TerminalProps) {
     termRef.current = null;
 
     const term = new XTerm({
-      fontFamily: 'Space Mono, monospace',
+      fontFamily: 'JetBrains Mono, Space Mono, monospace',
       fontSize: 14,
       theme: {
-        background: '#0b1120',
-        foreground: '#e5e7eb'
+        background: '#0b0f16',
+        foreground: '#dfe8f6',
+        cursor: '#60e1ff',
+        cursorAccent: '#0b0f16',
+        selectionBackground: 'rgba(96, 225, 255, 0.2)'
       }
     });
     termRef.current = term;
@@ -76,5 +79,5 @@ export default function Terminal({ websocketUrl }: TerminalProps) {
     };
   }, [websocketUrl]);
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return <div ref={containerRef} className="h-full w-full bg-[#0b0f16]" />;
 }

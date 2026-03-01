@@ -120,14 +120,15 @@ export default function ChallengeSession({
 
   return (
     <div className="glow-panel rounded-xl p-6 h-[520px] flex flex-col">
-      <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
-        <span>Live Terminal</span>
+      <div className="mb-3 flex items-center justify-between text-sm text-soft">
+        <span className="text-cyan">Live Terminal</span>
         <div className="flex items-center gap-3">
-          <span className="text-amber-300">{formatSeconds(remainingSeconds)}</span>
-          <span className="text-amber-300">Attempts: {attempts}</span>
+          {sessionId && <span className="session-active">Session Active</span>}
+          <span className="text-gold">{formatSeconds(remainingSeconds)}</span>
+          <span className="text-gold">Attempts: {attempts}</span>
         </div>
       </div>
-      <div className="flex-1 overflow-hidden rounded-lg border border-gray-800">
+      <div className="terminal-frame flex-1 overflow-hidden rounded-lg">
         <Terminal websocketUrl={websocketUrl ?? undefined} />
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
@@ -144,13 +145,13 @@ export default function ChallengeSession({
         >
           Submit for Validation
         </Button>
-        {status === 'pass' && <span className="text-green-400 text-sm">PASS — +{xpAwarded} XP.</span>}
-        {status === 'fail' && <span className="text-red-400 text-sm">FAIL — try again.</span>}
-        {status === 'error' && <span className="text-red-400 text-sm">Session error.</span>}
-        {levelUps > 0 && <span className="text-amber-300 text-sm">LEVEL UP x{levelUps}</span>}
+        {status === 'pass' && <span className="text-gold text-sm">PASS - +{xpAwarded} XP.</span>}
+        {status === 'fail' && <span className="text-[#ff7e7e] text-sm">FAIL - try again.</span>}
+        {status === 'error' && <span className="text-[#ff7e7e] text-sm">Session error.</span>}
+        {levelUps > 0 && <span className="text-gold text-sm">LEVEL UP x{levelUps}</span>}
       </div>
       {output && (
-        <pre className="mt-3 max-h-24 overflow-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-300">{output}</pre>
+        <pre className="panel-inset mt-3 max-h-24 overflow-auto rounded-lg p-3 text-xs text-soft">{output}</pre>
       )}
       <input type="hidden" value={challengeId} />
     </div>

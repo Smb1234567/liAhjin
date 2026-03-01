@@ -9,8 +9,8 @@ export default function DataSourceBadge({ source, note }: DataSourceBadgeProps) 
   const isCloud = source === 'cloud';
   const label = isCloud ? 'Cloud' : 'Local Fallback';
   const className = isCloud
-    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
-    : 'border-amber-500/40 bg-amber-500/10 text-amber-200';
+    ? 'border-[#60e1ff]/45 bg-[#60e1ff]/10 text-[#a7f0ff]'
+    : 'border-[#f8b84e]/45 bg-[#f8b84e]/10 text-[#ffd792]';
 
   return (
     <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs ${className}`}>

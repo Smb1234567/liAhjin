@@ -15,12 +15,15 @@ export default function QuestPanel({ title, quests }: { title: string; quests: Q
           return (
             <div key={quest.title}>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-200">{quest.title}</span>
-                <span className="text-gray-500">{quest.progress}/{quest.goal}</span>
+                <span>{quest.title}</span>
+                <span className="text-dim">{quest.progress}/{quest.goal}</span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">{quest.description}</p>
-              <div className="h-2 rounded-full bg-gray-800 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-[width] duration-[300ms] ease-out" style={{ width: `${percent}%` }} />
+              <p className="text-xs text-dim mb-2">{quest.description}</p>
+              <div className="panel-inset h-2 overflow-hidden rounded-full">
+                <div
+                  className="h-full bg-gradient-to-r from-[#f8b84e] via-[#f5bc5d] to-[#d99a39] transition-[width] duration-[300ms] ease-out"
+                  style={{ width: `${percent}%` }}
+                />
               </div>
             </div>
           );

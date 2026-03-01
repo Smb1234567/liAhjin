@@ -19,7 +19,7 @@ const config: Config = {
       animation: {},
       fontFamily: {
         display: ['"Bebas Neue"', 'sans-serif'],
-        mono: ['"Space Mono"', 'monospace']
+        mono: ['"JetBrains Mono"', 'monospace']
       }
     }
   },

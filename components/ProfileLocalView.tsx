@@ -35,7 +35,7 @@ export default function ProfileLocalView({ username }: { username: string }) {
   const chapterEstimate = Math.min(14, progress.completedChapterIds.length);
 
   return (
-    <main className="min-h-screen bg-gray-950">
+    <main className="min-h-screen">
       <div className="mx-auto max-w-5xl px-6 py-10 space-y-8">
         <HunterCard username={username} rank={progress.rank} titles={titles} />
 
@@ -43,35 +43,38 @@ export default function ProfileLocalView({ username }: { username: string }) {
           <div className="glow-panel rounded-xl p-6">
             <h2 className="font-display text-2xl mb-4">Stats</h2>
             <svg viewBox="0 0 100 100" className="mx-auto h-48 w-48">
-              <polygon points="50,10 90,50 50,90 10,50" fill="rgba(59,130,246,0.15)" stroke="#1f2937" />
-              <polygon points={points} fill="rgba(245,158,11,0.35)" stroke="#f59e0b" />
-              <text x="50" y="6" fontSize="6" textAnchor="middle" fill="#9ca3af">INT</text>
-              <text x="95" y="52" fontSize="6" textAnchor="end" fill="#9ca3af">AGI</text>
-              <text x="50" y="98" fontSize="6" textAnchor="middle" fill="#9ca3af">END</text>
-              <text x="5" y="52" fontSize="6" textAnchor="start" fill="#9ca3af">STR</text>
+              <polygon points="50,10 90,50 50,90 10,50" fill="rgba(96,225,255,0.1)" stroke="#1e2a3a" />
+              <polygon points={points} fill="rgba(248,184,78,0.28)" stroke="#f8b84e" />
+              <text x="50" y="6" fontSize="6" textAnchor="middle" fill="#8d98aa">INT</text>
+              <text x="95" y="52" fontSize="6" textAnchor="end" fill="#8d98aa">AGI</text>
+              <text x="50" y="98" fontSize="6" textAnchor="middle" fill="#8d98aa">END</text>
+              <text x="5" y="52" fontSize="6" textAnchor="start" fill="#8d98aa">STR</text>
             </svg>
           </div>
 
           <div className="glow-panel rounded-xl p-6 space-y-4">
             <div>
               <h3 className="font-display text-2xl">Chapter Progress</h3>
-              <div className="mt-3 h-2 rounded-full bg-gray-800">
-                <div className="h-full bg-green-500" style={{ width: `${Math.floor((chapterEstimate / 14) * 100)}%` }} />
+              <div className="panel-inset mt-3 h-2 overflow-hidden rounded-full">
+                <div
+                  className="h-full bg-gradient-to-r from-[#f8b84e] via-[#f5bc5d] to-[#d99a39]"
+                  style={{ width: `${Math.floor((chapterEstimate / 14) * 100)}%` }}
+                />
               </div>
-              <p className="mt-2 text-xs text-gray-400">{chapterEstimate} / 14 chapters complete</p>
+              <p className="mt-2 text-xs text-soft">{chapterEstimate} / 14 chapters complete</p>
             </div>
             <div>
               <h3 className="font-display text-2xl">Recent Clears</h3>
-              <ul className="mt-2 space-y-2 text-sm text-gray-400">
+              <ul className="mt-2 space-y-2 text-sm text-soft">
                 {(progress.completedChallenges.slice(-3).reverse().length
                   ? progress.completedChallenges.slice(-3).reverse()
                   : ['echo-hello'])
                   .map((slug) => (
                     <li key={slug}>{slug}</li>
-                  ))}
+                ))}
               </ul>
             </div>
-            <div className="streak-flame text-sm text-amber-300">🔥 {progress.streak} day streak</div>
+            <div className="streak-flame text-sm text-gold">🔥 {progress.streak} day streak</div>
           </div>
         </div>
       </div>

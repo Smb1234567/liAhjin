@@ -36,7 +36,7 @@ export default function ChapterChallengesClient({ challenges }: { challenges: Ch
   }, [challenges]);
 
   if (rows.length === 0) {
-    return <div className="glow-panel rounded-xl p-5 text-sm text-gray-400">No challenges available.</div>;
+    return <div className="glow-panel rounded-xl p-5 text-sm text-soft">No challenges available.</div>;
   }
 
   return (
@@ -45,16 +45,16 @@ export default function ChapterChallengesClient({ challenges }: { challenges: Ch
         <div key={challenge.slug} className="glow-panel rounded-xl p-5 flex items-center justify-between">
           <div>
             <h3 className="font-display text-2xl">{challenge.title}</h3>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-soft">
               XP {challenge.xp_reward} • {challenge.time_limit_seconds}s • {challenge.difficulty}
             </p>
           </div>
           {!challenge.unlocked ? (
-            <span className="text-gray-600">Locked</span>
+            <span className="text-dim">Locked</span>
           ) : (
             <Link
               href={`/challenges/${challenge.slug}`}
-              className="rounded-full border border-gray-700 px-4 py-2 text-sm text-gray-200"
+              className="rounded-full border border-[#1e2a3a] bg-[#101722]/70 px-4 py-2 text-sm text-[#cfd9e8] transition hover:border-[#f8b84e]/50 hover:text-[#ffe0a7] hover:shadow-[0_0_20px_rgba(248,184,78,0.2)]"
             >
               {challenge.completed ? 'Replay' : 'Start'}
             </Link>

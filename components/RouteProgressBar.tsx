@@ -7,9 +7,12 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+type Pulse = { id: number; x: number; y: number };
+
 /**
- * Tracks real network fetches (including Next.js RSC/data fetches) to drive a bottom progress bar.
- * Hides on very fast navigations to avoid flicker.
+ * Tracks route/data activity and renders:
+ * - Bottom progress bar
+ * - Tap/click interaction ripple
  */
 export default function RouteProgressBar() {
   const pathname = usePathname();
@@ -18,6 +21,7 @@ export default function RouteProgressBar() {
 
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [pulses, setPulses] = useState<Pulse[]>([]);
 
   const rafRef = useRef<number | null>(null);
   const hideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -25,12 +29,27 @@ export default function RouteProgressBar() {
   const inflight = useRef(0);
   const startAt = useRef<number | null>(null);
   const visibleRef = useRef(false);
+  const pulseIdRef = useRef(0);
 
   useEffect(() => {
     visibleRef.current = visible;
   }, [visible]);
 
-  // Incremental progress while fetches are in flight.
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const id = pulseIdRef.current++;
+      setPulses((prev) => [...prev, { id, x: event.clientX, y: event.clientY }]);
+      setTimeout(() => {
+        setPulses((prev) => prev.filter((pulse) => pulse.id !== id));
+      }, 520);
+    };
+
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, []);
+
   const startTicking = useCallback(() => {
     if (rafRef.current) return;
     const tick = () => {
@@ -58,7 +77,7 @@ export default function RouteProgressBar() {
       setVisible(true);
       setProgress((prev) => (prev === 0 ? 6 : prev));
       startTicking();
-    }, 120); // hide flicker for ultra-fast nav
+    }, 120);
   }, [startTicking]);
 
   const end = useCallback(() => {
@@ -66,7 +85,6 @@ export default function RouteProgressBar() {
     if (inflight.current === 0) {
       const elapsed = startAt.current ? performance.now() - startAt.current : 0;
       startAt.current = null;
-      // If we never showed because it was fast, ensure we stay hidden.
       if (elapsed < 120 && !visibleRef.current) {
         if (showGuardRef.current) clearTimeout(showGuardRef.current);
         return;
@@ -81,7 +99,6 @@ export default function RouteProgressBar() {
     }
   }, [stopTicking]);
 
-  // Patch fetch once to observe real data loads (Next flight/data requests go through fetch).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const originalFetch = window.fetch;
@@ -92,7 +109,6 @@ export default function RouteProgressBar() {
       const [input] = args;
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
       const sameOrigin = !url.startsWith('http') || url.startsWith(window.location.origin);
-      // Only track same-origin (covers Next flight/data, API routes); skip assets/externals.
       if (sameOrigin) begin();
 
       return originalFetch(...args).finally(() => {
@@ -107,31 +123,41 @@ export default function RouteProgressBar() {
     };
   }, [begin, end]);
 
-  // Kick the bar if the route changed but no fetch was captured (edge cases).
   useEffect(() => {
     begin();
-    const timer = setTimeout(end, 300); // if nothing else happens, complete quickly
+    const timer = setTimeout(end, 320);
     return () => clearTimeout(timer);
   }, [pathname, search, begin, end]);
 
   const percent = Math.round(progress);
 
   return (
-    <div
-      className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 transition-opacity duration-180 ${
-        visible ? 'opacity-100' : 'opacity-0'
-      }`}
-      aria-hidden
-    >
-      <div className="relative h-3 bg-gray-900/80 backdrop-blur-sm">
-        <div
-          className="absolute left-0 top-0 h-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.5)] transition-[width] duration-140"
-          style={{ width: `${percent}%` }}
-        />
-        <div className="absolute -top-5 right-3 text-[11px] font-semibold text-emerald-200 drop-shadow">
-          {percent}%
+    <>
+      <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden" aria-hidden>
+        {pulses.map((pulse) => (
+          <span
+            key={pulse.id}
+            className="absolute h-8 w-8 rounded-full border border-[#60e1ff]/70 animate-[ping_520ms_ease-out_1]"
+            style={{ left: pulse.x - 16, top: pulse.y - 16 }}
+          />
+        ))}
+      </div>
+      <div
+        className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 transition-opacity duration-180 ${
+          visible ? 'opacity-100' : 'opacity-0'
+        }`}
+        aria-hidden
+      >
+        <div className="relative h-2.5 bg-[#0f1520]/80 backdrop-blur-sm">
+          <div
+            className="absolute left-0 top-0 h-full bg-[#60e1ff] shadow-[0_0_20px_rgba(96,225,255,0.72)] transition-[width] duration-140"
+            style={{ width: `${percent}%` }}
+          />
+          <div className="absolute -top-5 right-3 text-[11px] font-semibold text-[#a7f0ff] drop-shadow">
+            {percent}%
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

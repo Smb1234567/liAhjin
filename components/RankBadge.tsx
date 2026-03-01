@@ -1,9 +1,19 @@
-import { rankColor, type Rank } from '../lib/xp';
+import { type Rank } from '../lib/xp';
 
 export default function RankBadge({ rank }: { rank: Rank }) {
-  const color = rankColor(rank);
+  const rankClass: Record<Rank, string> = {
+    E: 'rank-e',
+    D: 'rank-d',
+    C: 'rank-c',
+    B: 'rank-b',
+    A: 'rank-a',
+    S: 'rank-s',
+    SS: 'rank-ss',
+    SSS: 'rank-sss'
+  };
+
   return (
-    <div className={`px-4 py-2 rounded-full border border-gray-700 font-display text-2xl ${color}`}>
+    <div className={`rank-emblem ${rankClass[rank]}`}>
       {rank}
     </div>
   );

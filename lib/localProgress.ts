@@ -1,5 +1,6 @@
 import { applyHintPenalty, nextLevelXp, rankFromLevel, awardStats, type Rank } from './xp';
 import { TITLES, checkRankTitle } from './titles';
+import { normalizeChallengeSlug } from './challengeSlugAliases';
 
 const STORAGE_KEY = 'linuxhunter_progress_v1';
 
@@ -86,9 +87,13 @@ export function getLocalProgress(): LocalProgress {
   try {
     const parsed = JSON.parse(raw) as LocalProgress;
     const resolvedRank = parsed.rank ?? rankFromLevel(parsed.level ?? 1);
+    const normalizedCompletedChallenges = Array.from(
+      new Set((parsed.completedChallenges ?? []).map((slug) => normalizeChallengeSlug(slug)))
+    );
     return {
       ...defaultProgress,
       ...parsed,
+      completedChallenges: normalizedCompletedChallenges,
       rank: resolvedRank,
       nextLevelXp: nextLevelXp(parsed.level ?? 1)
     };
@@ -123,8 +128,12 @@ function applySpeedBonus(xp: number, timeTakenSeconds: number, parTimeSeconds: n
 }
 
 export function recordChallengeResult(input: ChallengeResultInput): ChallengeResultOutput {
+  const normalizedSlug = normalizeChallengeSlug(input.slug);
+  const normalizedChapterChallengeSlugs = Array.from(
+    new Set(input.chapterChallengeSlugs.map((slug) => normalizeChallengeSlug(slug)))
+  );
   const progress = getLocalProgress();
-  const alreadyCompleted = progress.completedChallenges.includes(input.slug);
+  const alreadyCompleted = progress.completedChallenges.includes(normalizedSlug);
   const now = Date.now();
   const lastActive = progress.lastActiveAt ? new Date(progress.lastActiveAt) : null;
   const nowDate = new Date(now);
@@ -158,8 +167,8 @@ export function recordChallengeResult(input: ChallengeResultInput): ChallengeRes
     lastActiveAt: now
   };
 
-  if (!next.completedChallenges.includes(input.slug)) {
-    next.completedChallenges = [...next.completedChallenges, input.slug];
+  if (!next.completedChallenges.includes(normalizedSlug)) {
+    next.completedChallenges = [...next.completedChallenges, normalizedSlug];
     next.streak += 1;
     next.dailyChallengeCount += 1;
     next.weeklyChallengeCount += 1;
@@ -196,8 +205,8 @@ export function recordChallengeResult(input: ChallengeResultInput): ChallengeRes
       END: next.stats.END + statDelta.END
     };
 
-    if (input.chapterChallengeSlugs.length > 0) {
-      const complete = input.chapterChallengeSlugs.every((slug) => next.completedChallenges.includes(slug));
+    if (normalizedChapterChallengeSlugs.length > 0) {
+      const complete = normalizedChapterChallengeSlugs.every((slug) => next.completedChallenges.includes(slug));
       if (complete && !next.completedChapterIds.includes(input.chapterId)) {
         next.completedChapterIds = [...next.completedChapterIds, input.chapterId];
         next.weeklyChapterCompleteCount += 1;

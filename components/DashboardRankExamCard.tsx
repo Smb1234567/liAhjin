@@ -71,25 +71,25 @@ export default function DashboardRankExamCard({
     <div className="glow-panel rounded-xl p-5">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-2xl">Rank-Up Exam</h3>
-        <span className="text-xs text-gray-400">Rank {currentRank}</span>
+        <span className="text-xs text-soft">Rank {currentRank}</span>
       </div>
-      <p className="mt-2 text-sm text-gray-400">
+      <p className="mt-2 text-sm text-soft">
         {unlocked ? 'Exam unlocked. Prove your worth.' : 'Complete all chapters to unlock the exam.'}
       </p>
-      <div className="mt-3 text-xs text-amber-300">Cooldown: {cooldownMs > 0 ? `${Math.ceil(cooldownMs / 60000)}m` : 'Ready'}</div>
+      <div className="mt-3 text-xs text-gold">Cooldown: {cooldownMs > 0 ? `${Math.ceil(cooldownMs / 60000)}m` : 'Ready'}</div>
       <div className="mt-4 space-y-3 text-sm">
-        <div className="rounded-lg border border-gray-800 bg-gray-900 p-3 text-gray-200">{prompt}</div>
+        <div className="panel-inset rounded-lg p-3">{prompt}</div>
         <input
           value={answer}
           onChange={(event) => setAnswer(event.target.value)}
           placeholder="Type command exactly"
-          className="w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100"
+          className="w-full rounded-lg border border-[#1e2a3a] bg-[#0c1119] px-3 py-2 text-sm text-[#e8eef8] outline-none transition focus:border-[#60e1ff]/65 focus:shadow-[0_0_20px_rgba(96,225,255,0.18)]"
           disabled={!unlocked || cooldownMs > 0 || !nextRank}
         />
         <Button onClick={submitExam} disabled={!unlocked || cooldownMs > 0 || !nextRank}>
           Submit Exam
         </Button>
-        {message && <div className="text-xs text-gray-300">{message}</div>}
+        {message && <div className="text-xs text-soft">{message}</div>}
       </div>
     </div>
   );

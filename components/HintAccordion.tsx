@@ -30,16 +30,16 @@ export default function HintAccordion({ hints, onReveal, disabled }: HintAccordi
                 onReveal?.(index);
               }
             }}
-            className={`w-full rounded-lg border border-gray-800 bg-gray-900/60 p-3 text-left ${
+            className={`panel-inset w-full rounded-lg p-3 text-left transition hover:border-[#60e1ff]/35 ${
               disabled ? 'opacity-60 cursor-not-allowed' : ''
             }`}
             disabled={disabled}
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">Hint {index + 1}</span>
-              <span className="text-xs text-amber-300">-10% XP</span>
+              <span className="text-sm text-soft">Hint {index + 1}</span>
+              <span className="text-xs text-gold">-10% XP</span>
             </div>
-            {isOpen && <p className="mt-2 text-xs text-gray-400">{hint}</p>}
+            {isOpen && <p className="mt-2 text-xs text-dim">{hint}</p>}
           </button>
         );
       })}

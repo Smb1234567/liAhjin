@@ -22,9 +22,15 @@ type ChallengeGateProps = {
     validator_script: string | null;
   };
   chapterChallenges: ChallengeInput[];
+  nextChallengeSlug?: string | null;
 };
 
-export default function ChallengeGate({ dataSource, challenge, chapterChallenges }: ChallengeGateProps) {
+export default function ChallengeGate({
+  dataSource,
+  challenge,
+  chapterChallenges,
+  nextChallengeSlug
+}: ChallengeGateProps) {
   const [unlocked, setUnlocked] = useState(true);
 
   useEffect(() => {
@@ -36,14 +42,14 @@ export default function ChallengeGate({ dataSource, challenge, chapterChallenges
 
   if (!unlocked) {
     return (
-      <main className="min-h-screen bg-gray-950">
+      <main className="min-h-screen">
         <div className="mx-auto max-w-4xl px-6 py-10">
           <div className="glow-panel rounded-xl p-6">
             <h1 className="font-display text-3xl">Challenge Locked</h1>
-            <p className="mt-2 text-sm text-gray-400">
+            <p className="mt-2 text-sm text-soft">
               Complete the previous challenge in this chapter to unlock this one.
             </p>
-            <div className="mt-4 text-xs text-amber-300">
+            <div className="mt-4 text-xs text-gold">
               Data source: {dataSource === 'cloud' ? 'Cloud' : 'Local Fallback'}
             </div>
           </div>
@@ -57,6 +63,7 @@ export default function ChallengeGate({ dataSource, challenge, chapterChallenges
       challenge={challenge}
       dataSource={dataSource}
       chapterChallenges={chapterChallenges}
+      nextChallengeSlug={nextChallengeSlug}
     />
   );
 }

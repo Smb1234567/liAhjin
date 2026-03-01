@@ -9,10 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.0",
+    "@clerk/nextjs": "^6.9.1",
+    "@neondatabase/serverless": "^0.10.0",
     "clsx": "^2.1.1",
+    "dotenv": "^17.3.1",
     "framer-motion": "^11.18.2",
-    "next": "14.2.5",
+    "next": "^14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "tailwind-merge": "^2.4.0",

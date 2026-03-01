@@ -12,9 +12,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  default: 'bg-amber-400 text-gray-950 hover:brightness-110',
-  outline: 'border border-gray-700 text-gray-200 hover:border-amber-400/40 hover:text-amber-100 hover:bg-gray-900',
-  ghost: 'text-gray-200 hover:text-amber-100 hover:bg-gray-900'
+  default:
+    'bg-[#f8b84e] text-[#120d05] border border-[#f8b84e]/80 shadow-[0_0_0_1px_rgba(248,184,78,0.18)] hover:shadow-[0_0_26px_rgba(248,184,78,0.35)] hover:brightness-105',
+  outline:
+    'border border-[#1e2a3a] bg-[#101722]/75 text-[#cfd9e8] hover:border-[#60e1ff]/55 hover:text-[#d6f6ff] hover:shadow-[0_0_22px_rgba(96,225,255,0.2)]',
+  ghost: 'text-[#cfd9e8] hover:text-[#f8b84e] hover:bg-[#111826]'
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -27,7 +29,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        'rounded-full transition disabled:opacity-50 ease-out duration-200 hover:-translate-y-0.5 active:translate-y-0 active:brightness-95',
+        'rounded-full transition disabled:opacity-50 ease-out duration-220 hover:-translate-y-0.5 active:translate-y-0 active:brightness-95',
         variantClasses[variant],
         sizeClasses[size],
         className

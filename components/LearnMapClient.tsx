@@ -33,7 +33,7 @@ export default function LearnMapClient({
   }, [chapters, challenges]);
 
   if (nodes.length === 0) {
-    return <div className="text-sm text-gray-500">No chapters available.</div>;
+    return <div className="text-sm text-dim">No chapters available.</div>;
   }
 
   return <ChapterMap chapters={nodes} />;
